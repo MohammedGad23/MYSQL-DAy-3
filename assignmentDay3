@@ -20,7 +20,8 @@ Q3 - Display name and age of each students
 
 Q4 - Display the name of students with their Rounded score in each Exam.
 
-	mysql> select secondName, name, round(scoreStudent+0.6363636,2) from display_score; --(view)
+	-- display_score is view table is created at day 2 
+	mysql> select secondName, name, round(scoreStudent+0.6363636,2) from display_score; 
 
 Q5 - Display the name of students with the year of Birthdate
 
