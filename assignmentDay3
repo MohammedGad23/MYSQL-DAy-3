@@ -1,0 +1,213 @@
+--------------------> lab Day 3
+
+Q1 - Insert new student and his score in exam in different subjects as transaction.
+
+	mysql> begin;
+	mysql> insert into student values (7,'taha@gmail.com','assiut','male','2000-01-10','taha','taha','frontEnd');
+	insert into exam values 
+    	-> (7,'html',90,'2023-01-02'),
+    	-> (7,'CSS',90,'2023-01-06'),
+    	-> (7,'CPP',80,'2023-01-10');
+mysql> commit;
+
+Q2 - Display the date of exam as the following: day 'month name' year.
+
+	mysql> select concat_ws(' ',day(dateExam),monthname(dateExam), year(dateExam)) from exam;
+
+Q3 - Display name and age of each students
+
+	mysql> select concat_ws(' ',firstName,secondName), timestampdiff(year , birthdate,curdate()) from student;
+
+Q4 - Display the name of students with their Rounded score in each Exam.
+
+	mysql> select secondName, name, round(scoreStudent+0.6363636,2) from display_score; --(view)
+
+Q5 - Display the name of students with the year of Birthdate
+
+	mysql> select concat_ws(' ',firstName,secondName), year( birthdate) from student;
+	
+Q6 - Add new exam result, in date column use NOW
+
+              mysql> insert into exam values (5,'PHP',100,now());
+Q7 - Create Hello world function which take username and return welcome message to user using his name
+
+	DELIMITER $$
+	create function welcom_user(UserName varchar(100)) 
+	returns varchar(200) DETERMINISTIC
+	begin
+		declare res varchar(200); 
+		set res = concat('welcome ', UserName);
+		return res;
+	end $$
+	DELIMITER ;
+	mysql> source /home/gad/Desktop/functionFile.sql
+	
+	mysql> select welcom_user('ahmed');
+	+----------------------+
+	| welcom_user('ahmed') |
+	+----------------------+
+	| welcome ahmed        |
+	+----------------------+
+
+Q8 -Create multiply function which take two number and return the multiply of them
+	DELIMITER $$
+	create function multiply(x int, y int) 
+	returns int DETERMINISTIC
+	begin
+		declare res int; 
+		set res = x * y;
+		return res;
+	end $$
+
+	DELIMITER ;
+	mysql> source /home/gad/Desktop/functionFile.sql
+	mysql> select multiply(3,4)
+	    -> ;
+	+---------------+
+	| multiply(3,4) |
+	+---------------+
+	|            12 |
+
+Q9 - Create function which takes student id and Exam id and return score the student in Exam.
+
+	create function viewScore_(id int , namecourse varchar(20)) 
+	returns float DETERMINISTIC
+	begin
+	      declare score float;
+	      select scoreStudent into score from exam where idStudent = id && nameCourse=namecourse;
+	      return score;
+	end $$
+
+	mysql> select viewScore_(1, 'CPP');
+	+----------------------+
+	| viewScore_(1, 'CPP') |
+	+----------------------+
+	|                   89 |
+	+----------------------+
+	1 row in set (0.00 sec)
+
+
+
+Q10 - Create function which takes Exam id and return the number of students who failed in a Exam (Score less than 50).
+
+	create function fialstudent2(namecourse varchar(20)) 
+	returns int DETERMINISTIC
+	begin
+	      declare cnt int;
+	      select count(nameCourse) into cnt from exam where scoreStudent < 70 and exam.nameCourse = namecourse;
+	      return cnt;
+	end $$
+
+	mysql> select fialstudent2('CPP');
+	
+Q11 - Create function which take subject name and return the average of max grades for subject
+
+	create function avrage_Course(namecourse varchar(20)) 
+	returns float DETERMINISTIC
+	begin
+	      declare avrage_ float;
+	      select avg(maxScore) into avrage_ from courses where courses.name = namecourse;
+	      return avrage_;
+	end $$
+	mysql> select avrage_Course('CSS');
+
+Q12 - Create Table called Deleted_Students which will hold the deleted students info(same columns as in student tables)
+
+	mysql> create table Deleted_Students 
+	    -> (
+	    -> idstudent int,
+	    -> email varchar(50),
+	    -> address varchar(50),
+	    -> gender enum('male','female')
+	    -> );
+	Query OK, 0 rows affected (0.04 sec)
+
+Q13 - Create trigger to save the deleted student from Student table to Deleted_Students.
+
+	DELIMITER $$
+	create trigger Delete__
+	after delete 
+	on student
+	for each row begin
+	insert into Delete_Students value(now(), old.idStudent, old.email, old.address, concat(old.firstName, ' ', old.secondName));
+	end $$
+
+	DELIMITER ;
+	mysql> source /home/gad/Desktop/Triggers_.sql
+	mysql> delete from student where idStudent = 5;
+	Query OK, 1 row affected (0.00 sec)
+
+	mysql> select * from Delete_Students;
+	+------------+-----------+-------------------+---------+---------------+
+	| date_      | idstudent | email             | address | namestudent   |
+	+------------+-----------+-------------------+---------+---------------+
+	| 2024-07-23 |         6 | male@gmail.com    | assiut  | ss mohamed    |
+	| 2024-07-23 |         5 | Mohamed@gmail.com | assiut  | ibrahem ahmed |
+	+------------+-----------+-------------------+---------+---------------+
+	2 rows in set (0.00 sec)
+
+Q14 - Create trigger to save the newly added students to Student table to Backup_Students.
+
+	DELIMITER $$
+	create trigger AddStudent
+	after insert
+	on student
+	for each row begin 
+		insert into Backup_Students value (new.idStudent, new.email, new.address, new.gender, concat(new.firstName, ' ', new.secondName), new.nameTrack);	
+	end $$
+	mysql> source /home/gad/Desktop/Triggers_.sql
+	mysql> select * from Backup_Students;
+	+-----------+----------+---------+--------+-----------+-----------+
+	| idstudent | email    | address | gender | name      | nameTrack |
+	+-----------+----------+---------+--------+-----------+-----------+
+	|         6 | mail@com | Assiut  | male   | seed amer | PHP       |
+	|         8 | mail@com | Assiut  | male   | seed amer | PHP       |
+	+-----------+----------+---------+--------+-----------+-----------+
+	2 rows in set (0.00 sec)
+ 
+Q15 -Create trigger to keep track the changes of contact info table (add/update rows); it will logs the time of action and description of action to another table.
+ 
+	create trigger AddStudentinfo
+	before insert
+	on student
+	for each row begin 
+	         insert into change_info value(CURRENT_TIMESTAMP(), 'insert row on student table');
+	end $$
+	
+	create trigger updateStudentinfo
+	before update
+	on student
+	for each row begin 
+	         insert into change_info value(CURRENT_TIMESTAMP(), 'update row on student table');
+	end $$
+	
+	create trigger AddCourseinfo
+	before insert
+	on courses
+	for each row begin 
+	          insert into change_info value(CURRENT_TIMESTAMP(), 'insert row on courses table');
+	end $$
+	
+	create trigger updateCourseinfo
+	before update
+	on courses
+	for each row begin 
+	          insert into change_info value(CURRENT_TIMESTAMP(), 'update row on courses table');
+	end $$
+ 
+Q16 - Dump your database (Grading Database) into SQL file.
+
+	mysqldump -u root -p ITI > ITI_backup.sql
+	
+Q17 - Dump Students table into file.
+
+	mysqldump -u root -p ITI student> student_backup.sql
+ 
+Q18 - Import SQL file into your backup database (Grading_Backup Database)
+
+	mysql> use ITI;
+	mysql> source ITI_backup.sql;
+
+
+
+
